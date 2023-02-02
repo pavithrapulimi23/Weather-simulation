@@ -1,0 +1,48 @@
+import numpy as np
+
+#Constructor for initialisation of object
+class WeatherSimulation:
+
+    def __init__(self, transition_probabilities, holding_times):
+        self.Time_dir = holding_times
+        self.Tran_dir = transition_probabilities
+        for var in self.Tran_dir:
+            if sum(list(self.Tran_dir[var].values())) != 1:
+                raise RuntimeError("Sum of the probs is not 1")
+        self.place = "sunny"#we are considering "sunny" as initial state
+        self.tym = 0
+        self.lst_places = ["sunny"]
+#to get to know every state
+    def get_states(self):
+        return list(self.Tran_dir)
+# it checks the current states
+    def current_state(self):
+        return self.place
+#it gives the next state
+    def next_state(self):
+        lis = self.Tran_dir[self.place]
+        mps = np.random.choice(a=list(lis), p=list(lis.values()))
+        self.tym -= self.Time_dir[mps]
+        self.lst_places += [mps] * self.Time_dir[mps]
+        return mps
+#after knowing the new states it sets to the current state
+    def set_state(self, new_state):
+        self.place = new_state
+#it gives the remaining hours left in the current state
+    def current_state_remaining_hours(self):
+        return self.tym
+#it is the generator funtion where the loop generates
+    def iterable(self):
+        while True:
+            yield self.current_state()
+            self.set_state(self.next_state())
+#returns a list of percentages that a state occured in he simulation
+    def simulate(self, hours):
+        self.tym = hours
+
+        while self.current_state_remaining_hours() > 0 and len(self.lst_places) < hours:
+            self.set_state(self.next_state())
+
+        scount = {var: self.lst_places.count(var) for var in list(self.Tran_dir)}
+        tstates = sum(scount.values())
+        return [round(scount[i] / tstates * 100, 2) for i in scount]
